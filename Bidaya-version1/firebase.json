@@ -1,0 +1,42 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "bidaya-app",
+          "appId": "1:918043121382:android:bfe051ce3b1461e69a8d27",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "bidaya-app",
+          "configurations": {
+            "android": "1:918043121382:android:bfe051ce3b1461e69a8d27",
+            "ios": "1:918043121382:ios:f479210a3416ac6b9a8d27",
+            "macos": "1:918043121382:ios:f479210a3416ac6b9a8d27",
+            "web": "1:918043121382:web:29a4662af591edf89a8d27",
+            "windows": "1:918043121382:web:80940247c2b756c29a8d27"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}

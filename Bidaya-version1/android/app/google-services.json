@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "918043121382",
+    "project_id": "bidaya-app",
+    "storage_bucket": "bidaya-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:918043121382:android:bfe051ce3b1461e69a8d27",
+        "android_client_info": {
+          "package_name": "com.example.bidaya"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "918043121382-4adl9djb92cac09qmcpl2gj1u5n24nhf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bidaya",
+            "certificate_hash": "778516298bdb2e56e89c642847de63b988988d64"
+          }
+        },
+        {
+          "client_id": "918043121382-sje9ngse9tn0uo6nt3jh4qoumpt0ocqd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjGT47ExRL-oV0gBZfHXGKQnK1bD5h4lo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "918043121382-sje9ngse9tn0uo6nt3jh4qoumpt0ocqd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
