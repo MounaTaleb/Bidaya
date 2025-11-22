@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MemoryGamePage extends StatefulWidget {
   const MemoryGamePage({super.key});
@@ -11,6 +13,7 @@ class MemoryGamePage extends StatefulWidget {
 class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProviderStateMixin {
   int? selectedLevel;
   bool gameStarted = false;
+  bool showAllCards = false;
   List<MemoryCard> cards = [];
   int? firstCardIndex;
   int? secondCardIndex;
@@ -18,6 +21,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
   int moves = 0;
   bool canFlip = true;
   late AnimationController _celebrationController;
+  Map<String, int> highScores = {};
 
   final List<String> emojis = ['🐱', '🐶', '🐼', '🦁', '🐘', '🦊', '🐸', '🐰', '🦄', '🐯', '🐨', '🐵'];
   final List<Color> levelColors = [
@@ -33,6 +37,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
+    _loadHighScores();
   }
 
   @override
@@ -41,15 +46,47 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
     super.dispose();
   }
 
-  void initializeGame(int level) {
+  // Charger les meilleurs scores depuis le localStorage
+  Future<void> _loadHighScores() async {
+    final prefs = await SharedPreferences.getInstance();
+    final scoresJson = prefs.getString('memory_high_scores');
+
+    if (scoresJson != null) {
+      setState(() {
+        highScores = Map<String, int>.from(json.decode(scoresJson));
+      });
+    }
+  }
+
+  // Sauvegarder les meilleurs scores dans le localStorage
+  Future<void> _saveHighScores() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('memory_high_scores', json.encode(highScores));
+  }
+
+  // Mettre à jour le meilleur score pour le niveau actuel
+  void _updateHighScore(int level) {
+    String levelKey = 'level_$level';
+    int currentHighScore = highScores[levelKey] ?? 0;
+
+    if (score > currentHighScore) {
+      setState(() {
+        highScores[levelKey] = score;
+      });
+      _saveHighScores();
+    }
+  }
+
+  void initializeGame(int level) async {
     setState(() {
       selectedLevel = level;
       gameStarted = true;
+      showAllCards = true;
       score = 0;
       moves = 0;
       firstCardIndex = null;
       secondCardIndex = null;
-      canFlip = true;
+      canFlip = false;
 
       int pairsCount = level == 1 ? 6 : (level == 2 ? 8 : 12);
       List<String> selectedEmojis = emojis.sublist(0, pairsCount);
@@ -62,15 +99,27 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
           .map((entry) => MemoryCard(
         id: entry.key,
         value: entry.value,
-        isFlipped: false,
+        isFlipped: true, // Toutes les cartes sont visibles au début
         isMatched: false,
       ))
           .toList();
     });
+
+    // Après 3 secondes, cacher les cartes et commencer le jeu
+    await Future.delayed(const Duration(seconds: 3));
+
+    setState(() {
+      showAllCards = false;
+      canFlip = true;
+      // Retourner toutes les cartes
+      for (var card in cards) {
+        card.isFlipped = false;
+      }
+    });
   }
 
   void onCardTap(int index) {
-    if (!canFlip || cards[index].isFlipped || cards[index].isMatched) return;
+    if (!canFlip || cards[index].isFlipped || cards[index].isMatched || showAllCards) return;
 
     setState(() {
       cards[index].isFlipped = true;
@@ -102,6 +151,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
 
       if (cards.every((card) => card.isMatched)) {
         _celebrationController.forward().then((_) => _celebrationController.reverse());
+        _updateHighScore(selectedLevel!); // Mettre à jour le meilleur score
         Future.delayed(const Duration(milliseconds: 1500), () {
           showWinDialog();
         });
@@ -118,6 +168,10 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
   }
 
   void showWinDialog() {
+    String levelKey = 'level_${selectedLevel!}';
+    int highScore = highScores[levelKey] ?? 0;
+    bool isNewHighScore = score == highScore && score > 0;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -143,10 +197,10 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
                     width: 120,
                     height: 120,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
+                      return Icon(
                         Icons.celebration,
                         size: 120,
-                        color: Colors.green,
+                        color: isNewHighScore ? Colors.amber : Colors.green,
                       );
                     },
                   ),
@@ -154,12 +208,12 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
                   const SizedBox(height: 20),
 
                   // Message de résultat
-                  const Text(
-                    'أحسنت !',
+                  Text(
+                    isNewHighScore ? '🎉 رقم قياسي جديد !' : 'أحسنت !',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
-                      color: Colors.green,
+                      color: isNewHighScore ? Colors.amber : Colors.green,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Amiri',
                     ),
@@ -168,10 +222,10 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
                   const SizedBox(height: 10),
 
                   // Sous-titre
-                  const Text(
-                    'لقد أكملت اللعبة بنجاح',
+                  Text(
+                    isNewHighScore ? 'لقد حطمت الرقم القياسي!' : 'لقد أكملت اللعبة بنجاح',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 18,
                       color: Colors.black54,
                       fontFamily: 'Amiri',
@@ -240,6 +294,28 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
                                   ),
                                 ),
                               ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          height: 1,
+                          color: Colors.black26,
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'أفضل نتيجة: $highScore',
+                              style: const TextStyle(
+                                fontFamily: 'Amiri',
+                                fontSize: 16,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),
@@ -385,6 +461,8 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
           const SizedBox(height: 40),
           ...List.generate(3, (index) {
             int level = index + 1;
+            String levelKey = 'level_$level';
+            int highScore = highScores[levelKey] ?? 0;
             String levelText = level == 1 ? 'المرحلة الأولى' : (level == 2 ? 'المرحلة الثانية' : 'المرحلة الثالثة');
             String difficulty = level == 1 ? 'سهلة' : (level == 2 ? 'متوسطة' : 'صعبة');
 
@@ -394,7 +472,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
                 onTap: () => initializeGame(level),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
                     color: levelColors[index],
                     borderRadius: BorderRadius.circular(20),
@@ -426,6 +504,24 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
                           color: const Color(0xFF2C3E50).withOpacity(0.7),
                         ),
                       ),
+                      if (highScore > 0) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.emoji_events, color: Colors.amber, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              'أفضل نتيجة: $highScore',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Amiri',
+                                color: Color(0xFF2C3E50),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -450,9 +546,33 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
             children: [
               _buildScoreCard('النقاط', score.toString(), const Color(0xFF4CAF50)),
               _buildScoreCard('المحاولات', moves.toString(), const Color(0xFFFF9800)),
+              if (showAllCards)
+                _buildScoreCard('حفظ الأوراق', '3 ثواني', const Color(0xFF6C63FF)),
             ],
           ),
         ),
+
+        // Message d'affichage des cartes
+        if (showAllCards)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6C63FF),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'انظر جيداً وحفظ مواقع الأوراق!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontFamily: 'Amiri',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
 
         // Game grid
         Expanded(
@@ -474,7 +594,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
                     decoration: BoxDecoration(
                       color: cards[index].isMatched
                           ? Colors.green.withOpacity(0.3)
-                          : cards[index].isFlipped
+                          : (cards[index].isFlipped || showAllCards)
                           ? Colors.white
                           : const Color(0xFF6C63FF),
                       borderRadius: BorderRadius.circular(15),
@@ -487,7 +607,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
                       ],
                     ),
                     child: Center(
-                      child: cards[index].isFlipped || cards[index].isMatched
+                      child: (cards[index].isFlipped || cards[index].isMatched || showAllCards)
                           ? Text(
                         cards[index].value,
                         style: const TextStyle(fontSize: 40),
@@ -506,7 +626,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
 
   Widget _buildScoreCard(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.2),
         borderRadius: BorderRadius.circular(15),
@@ -518,7 +638,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
             label,
             style: TextStyle(
               fontFamily: 'Amiri',
-              fontSize: 16,
+              fontSize: 14,
               color: color,
               fontWeight: FontWeight.bold,
             ),
@@ -528,7 +648,7 @@ class _MemoryGamePageState extends State<MemoryGamePage> with SingleTickerProvid
             value,
             style: TextStyle(
               fontFamily: 'Amiri',
-              fontSize: 24,
+              fontSize: 18,
               color: color,
               fontWeight: FontWeight.bold,
             ),

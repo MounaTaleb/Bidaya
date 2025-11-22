@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'missing_letter_game_page.dart';
 import 'drawing_game_page.dart';
 
-
 class LettersPage extends StatelessWidget {
   const LettersPage({super.key});
 
@@ -11,62 +10,126 @@ class LettersPage extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
-          title: const Text('لعبة الحروف'),
           backgroundColor: Colors.pinkAccent,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // En-tête avec l'heure
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-
-
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.pinkAccent, Colors.pink.shade400],
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
               ),
-
-              const SizedBox(height: 30),
-
-              // Titre principal
+            ),
+          ),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_forward, color: Colors.white, size: 28),
+                onPressed: () => Navigator.pop(context),
+              ),
               const Text(
                 'لعبة الحروف',
-                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 32,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.pinkAccent,
+                  color: Colors.white,
                   fontFamily: 'Amiri',
                 ),
               ),
-
-              const SizedBox(height: 50),
-
-              // Carte pour le jeu "رسم الحروف"
-              _buildGameCard(
-                title: 'رسم الحروف',
-                subtitle: 'تعلم كتابة الحروف العربية',
-                icon: Icons.edit,
-                color: Colors.blue,
-                onTap: () {
-                  _navigateToDrawingGame(context);
-                },
-              ),
-
-              const SizedBox(height: 30),
-
-              // Carte pour le jeu "الحرف المفقودة"
-              _buildGameCard(
-                title: 'الحرف المفقودة',
-                subtitle: 'اكتشف الحرف الناقص',
-                icon: Icons.search,
-                color: Colors.green,
-                onTap: () {
-                  _navigateToMissingLetterGame(context);
-                },
-              ),
+              const SizedBox(width: 48),
             ],
+          ),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 20),
+
+                  // Titre principal avec icône
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.pink.shade50, Colors.purple.shade50],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.pink.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+
+                        const SizedBox(width: 12),
+                        const Flexible(
+                          child: Text(
+                            'اختر اللعبة التي تريد لعبها',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.pinkAccent,
+                              fontFamily: 'Amiri',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 35),
+
+                  // Carte 1 - رسم الحروف
+                  _buildGameCard(
+                    title: 'رسم الحروف',
+                    subtitle: 'تعلم كتابة الحروف العربية بطريقة ممتعة',
+                    icon: Icons.draw,
+                    gradientColors: [Colors.blue.shade100, Colors.blue.shade400],
+                    iconColor: Colors.blue.shade700,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DrawingGamePage()),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Carte 2 - الحرف المفقود
+                  _buildGameCard(
+                    title: 'الحرف المفقود',
+                    subtitle: 'اكتشف الحرف الناقص وأكمل الكلمة',
+                    icon: Icons.search,
+                    gradientColors: [Colors.green.shade100, Colors.green.shade400],
+                    iconColor: Colors.green.shade700,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MissingLetterGamePage()),
+                      );
+                    },
+                  ),
+
+
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -77,45 +140,55 @@ class LettersPage extends StatelessWidget {
     required String title,
     required String subtitle,
     required IconData icon,
-    required Color color,
+    required List<Color> gradientColors,
+    required Color iconColor,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withOpacity(0.1),
-                color.withOpacity(0.3),
-              ],
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors[1].withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
           child: Row(
             children: [
+              // Icône dans un cercle
               Container(
-                padding: const EdgeInsets.all(15),
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
-                  color: color,
+                  color: Colors.white,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   icon,
-                  color: Colors.white,
-                  size: 30,
+                  size: 40,
+                  color: iconColor,
                 ),
               ),
               const SizedBox(width: 20),
+              // Texte
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,27 +196,28 @@ class LettersPage extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Colors.white,
                         fontFamily: 'Amiri',
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.9),
                         fontFamily: 'Amiri',
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              // Flèche
+              Icon(
                 Icons.arrow_back_ios,
-                color: Colors.grey,
+                color: Colors.white.withOpacity(0.8),
                 size: 20,
               ),
             ],
@@ -153,21 +227,36 @@ class LettersPage extends StatelessWidget {
     );
   }
 
-  void _navigateToDrawingGame(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DrawingGamePage()),
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontFamily: 'Amiri',
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade700,
+            fontFamily: 'Amiri',
+          ),
+        ),
+      ],
     );
-    // TODO: Implémenter la navigation vers l'écran du jeu de dessin
-    // Navigator.push(context, MaterialPageRoute(builder: (context) => DrawingGamePage()));
-  }
-
-  void _navigateToMissingLetterGame(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const MissingLetterGamePage()),
-    );
-    // TODO: Implémenter la navigation vers l'écran du jeu des lettres manquantes
-    // Navigator.push(context, MaterialPageRoute(builder: (context) => MissingLetterGamePage()));
   }
 }

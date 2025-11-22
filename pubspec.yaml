@@ -18,6 +18,13 @@ dependencies:
   path_provider: ^2.1.1
   http: ^1.1.0
   flutter_dotenv: ^5.1.0
+  # === AJOUT FIREBASE ===
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.17.1
+  cloud_firestore: ^4.9.1
+  # Ajoutez d'autres services Firebase selon vos besoins
+  # firebase_storage: ^11.5.0
+  # firebase_messaging: ^14.7.1
 
 dev_dependencies:
   flutter_test:
@@ -32,8 +39,8 @@ flutter:
     - assets/images/bidaya_logo.png
     - assets/images/age.png
     - assets/images/google.png
-    - assets/images/formulaire.png   
-    - assets/images/formulaire2.png                                         
+    - assets/images/formulaire.png
+    - assets/images/formulaire2.png
     - assets/images/nom.png
     - assets/images/lapin.jpg # AJOUT IMPORTANT
     - assets/videos/intro.mp4
@@ -66,7 +73,12 @@ flutter:
     - assets/images/try_again.png
     - assets/images/p1.png
     - assets/images/lapin.png
-
+    - assets/images/clock.jpg
+    - assets/images/milk.jpg
+    - assets/images/moone.jpg
+    - assets/images/queen.jpg
+    - assets/images/school.jpg
+    - assets/images/tree.jpg
 
 
 flutter_launcher_icons:

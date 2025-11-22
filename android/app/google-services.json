@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "80215822922",
+    "project_id": "bidaya-b671f",
+    "storage_bucket": "bidaya-b671f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:80215822922:android:88a665f51f436345464cb3",
+        "android_client_info": {
+          "package_name": "com.android.application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkXI1Fh1vgyRQ6A3KSGG3Y65t4vLGiO9c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

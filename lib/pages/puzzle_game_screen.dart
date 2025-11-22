@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'puzzle_page.dart';
+import 'local_storage_service.dart';
 
 class PuzzleGameScreen extends StatefulWidget {
   final PuzzleItem puzzle;
@@ -49,14 +50,18 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
   List<PuzzlePiece> placedPieces = [];
   bool isCompleted = false;
   int score = 0;
+  int moves = 0;
   PuzzlePiece? selectedPiece;
   ui.Image? fullImage;
+  DateTime? startTime;
+  Duration? completionTime;
 
   @override
   void initState() {
     super.initState();
     _initializePuzzle();
     _loadImage();
+    startTime = DateTime.now();
   }
 
   Future<void> _loadImage() async {
@@ -71,6 +76,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
   void _initializePuzzle() {
     availablePieces = [];
     placedPieces = [];
+    moves = 0;
 
     for (int i = 0; i < widget.puzzle.pieces; i++) {
       availablePieces.add(PuzzlePiece(
@@ -114,6 +120,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
           score += 10;
         }
 
+        moves++;
         selectedPiece = null;
       });
 
@@ -139,10 +146,19 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
       }
 
       if (allCorrect) {
+        completionTime = DateTime.now().difference(startTime!);
+
+        // Bonus de temps et de mouvements
+        final timeBonus = (300 - completionTime!.inSeconds).clamp(0, 100);
+        final movesBonus = (50 - moves).clamp(0, 50);
+
         setState(() {
           isCompleted = true;
-          score += 50;
+          score += 50 + timeBonus + movesBonus;
         });
+
+        // Sauvegarder le score
+        LocalStorageService.savePuzzleScore(widget.puzzle.id, score);
 
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
@@ -179,6 +195,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
       if (logicalPosition == piece.correctPosition) {
         score -= 10;
       }
+      moves++;
     });
   }
 
@@ -247,7 +264,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Statistiques
+                  // Statistiques détaillées
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -266,31 +283,51 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.stars, color: Color(0xFFFF9800), size: 24),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'النقاط: ',
-                              style: TextStyle(
-                                fontFamily: 'Amiri',
-                                fontSize: 16,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            Text(
-                              '$score',
-                              style: const TextStyle(
-                                fontFamily: 'Amiri',
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF4CAF50),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+
+                        _buildStatRow('الوقت:', '${completionTime!.inMinutes}:${(completionTime!.inSeconds % 60).toString().padLeft(2, '0')}'),
+                        _buildStatRow('الحركات:', '$moves'),
+                        _buildStatRow('النقاط:', '$score', isScore: true),
+
+                        const SizedBox(height: 8),
+
+                        FutureBuilder<Map<String, int>>(
+                          future: LocalStorageService.getHighScores(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final puzzleIdString = widget.puzzle.id.toString(); // Convertir en String
+                              final highScore = snapshot.data![puzzleIdString] ?? 0;
+                              final isNewHighScore = score > highScore;
+
+                              if (isNewHighScore) {
+                                return Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.green),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'أفضل نتيجة جديدة!',
+                                        style: TextStyle(
+                                          fontFamily: 'Amiri',
+                                          fontSize: 14,
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            }
+                            return const SizedBox();
+                          },
+                        ),                      ],
                     ),
                   ),
 
@@ -359,11 +396,42 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
     );
   }
 
+  Widget _buildStatRow(String label, String value, {bool isScore = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Amiri',
+              fontSize: 16,
+              color: Colors.black54,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'Amiri',
+              fontSize: isScore ? 20 : 16,
+              fontWeight: isScore ? FontWeight.bold : FontWeight.normal,
+              color: isScore ? const Color(0xFF4CAF50) : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _resetGame() {
     setState(() {
       isCompleted = false;
       score = 0;
+      moves = 0;
       selectedPiece = null;
+      startTime = DateTime.now();
+      completionTime = null;
       _initializePuzzle();
     });
   }
@@ -406,11 +474,11 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
         body: SingleChildScrollView(
           child: Column(
             children: [
+              _buildScoreHeader(),
               _buildInstructions(),
               _buildReferenceImage(),
               _buildGameArea(gridSize),
               _buildAvailablePieces(),
-              _buildActionButtons(),
             ],
           ),
         ),
@@ -418,16 +486,69 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
     );
   }
 
+  Widget _buildScoreHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: widget.puzzle.backgroundColor.withOpacity(0.1),
+        border: Border(
+          bottom: BorderSide(color: widget.puzzle.backgroundColor, width: 2),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildScoreItem('النقاط', '$score', Icons.stars),
+          _buildScoreItem('الحركات', '$moves', Icons.touch_app),
+          _buildScoreItem(
+              'الوقت',
+              startTime != null
+                  ? '${DateTime.now().difference(startTime!).inMinutes}:${(DateTime.now().difference(startTime!).inSeconds % 60).toString().padLeft(2, '0')}'
+                  : '0:00',
+              Icons.timer
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoreItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: widget.puzzle.backgroundColor, size: 24),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Amiri',
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: widget.puzzle.backgroundColor,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Amiri',
+            fontSize: 12,
+            color: Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildInstructions() {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12),
       child: Text(
         isCompleted
             ? '🎉 مبروك! أكملت البازل!'
             : 'اختر قطعة ثم انقر على مكانها الصحيح',
         style: TextStyle(
           fontFamily: 'Amiri',
-          fontSize: 18,
+          fontSize: 16,
           color: isCompleted ? Colors.green : Colors.grey[700],
           fontWeight: FontWeight.bold,
         ),
@@ -450,7 +571,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
           ),
           const SizedBox(height: 8),
           Container(
-            height: 150,
+            height: 120,
             decoration: BoxDecoration(
               border: Border.all(color: widget.puzzle.backgroundColor, width: 3),
               borderRadius: BorderRadius.circular(12),
@@ -619,8 +740,6 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
   }
 
   Widget _buildPlacedPiece(PuzzlePiece piece, int gridSize, double size) {
-    final logicalPosition = _convertRTLPositionToLogical(piece.currentPosition, gridSize);
-
     return GestureDetector(
       onTap: () => _removePlacedPiece(piece),
       child: Container(
@@ -656,43 +775,6 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> {
         gridSize: gridSize,
       ),
       child: Container(),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          ElevatedButton.icon(
-            onPressed: _resetGame,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            icon: const Icon(Icons.refresh),
-            label: const Text(
-              'إعادة',
-              style: TextStyle(fontFamily: 'Amiri', fontSize: 18),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.puzzle.backgroundColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            icon: const Icon(Icons.arrow_back),
-            label: const Text(
-              'خروج',
-              style: TextStyle(fontFamily: 'Amiri', fontSize: 18),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

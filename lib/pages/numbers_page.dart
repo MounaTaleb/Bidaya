@@ -10,22 +10,31 @@ class PageNumbersPage extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF9FBFA), // Fond vert clair pastel
+        backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
           backgroundColor: const Color(0xFF5D83FA),
           elevation: 0,
           automaticallyImplyLeading: false,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [const Color(0xFF5D83FA), const Color(0xFF4A6FE8)],
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+              ),
+            ),
+          ),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                icon: const Icon(Icons.arrow_forward, color: Colors.white, size: 28),
                 onPressed: () => Navigator.pop(context),
               ),
               const Text(
                 'لعبة الأرقام',
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   fontFamily: 'Amiri',
@@ -36,60 +45,100 @@ class PageNumbersPage extends StatelessWidget {
           ),
         ),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 20),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
 
-                // Titre principal
-                const Text(
-                  'اختر اللعبة التي تريد لعبها',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF5D83FA),
-                    fontFamily: 'Amiri',
+                  // Titre principal avec icône
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade50, Colors.purple.shade50],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.casino,
+                          color: const Color(0xFF5D83FA),
+                          size: 32,
+                        ),
+                        const SizedBox(width: 12),
+                        const Flexible(
+                          child: Text(
+                            'اختر اللعبة التي تريد لعبها',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5D83FA),
+                              fontFamily: 'Amiri',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 40),
+                  const SizedBox(height: 35),
 
-                // Carte rose - Comparaison
-                _buildNumberCard(
-                  context,
-                  imagePath: 'assets/images/1.png',
-                  title: 'المقارنة بين الأعداد',
-                  color: const Color(0xFFFAF5C7),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ComparisonGamePage()),
-                    );
-                  },
-                ),
+                  // Carte 1 - Comparaison
+                  _buildNumberCard(
+                    context,
+                    icon: Icons.compare_arrows,
+                    title: 'المقارنة بين الأعداد',
+                    description: 'قارن الأعداد واختر العلامة الصحيحة',
+                    gradientColors: [const Color(0xFFFFF9C4), const Color(0xFFFFEB3B)],
+                    iconColor: Colors.orange.shade700,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ComparisonGamePage()),
+                      );
+                    },
+                  ),
 
-                const SizedBox(height: 25),
+                  const SizedBox(height: 20),
 
-                // Carte bleue - Comptage
-                _buildNumberCard(
-                  context,
-                  imagePath: 'assets/images/2.jpg',
-                  title: 'عد العصي',
-                  color: const Color(0xFFF6C6E0),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CountingSticksGamePage()),
-                    );
-                  },
-                ),
+                  // Carte 2 - Comptage
+                  _buildNumberCard(
+                    context,
+                    icon: Icons.format_list_numbered,
+                    title: 'عد العصي',
+                    description: 'عد العصي الملونة واختر الرقم الصحيح',
+                    gradientColors: [const Color(0xFFF8BBD0), const Color(0xFFEC407A)],
+                    iconColor: Colors.pink.shade700,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CountingSticksGamePage()),
+                      );
+                    },
+                  ),
 
-                const Spacer(),
-              ],
+                  const SizedBox(height: 30),
+
+                  // Carte d'information
+
+                ],
+              ),
             ),
           ),
         ),
@@ -99,57 +148,89 @@ class PageNumbersPage extends StatelessWidget {
 
   Widget _buildNumberCard(
       BuildContext context, {
-        required String imagePath,
+        required IconData icon,
         required String title,
-        required Color color,
+        required String description,
+        required List<Color> gradientColors,
+        required Color iconColor,
         required VoidCallback onTap,
       }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 180,
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: gradientColors[1].withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Row(
             children: [
-              // Image au centre
-              if (imagePath.isNotEmpty)
-                Image.asset(
-                  imagePath,
-                  width: 90,
-                  height: 90,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.games,
-                      size: 90,
-                      color: Colors.black54,
-                    );
-                  },
+              // Icône dans un cercle
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 15),
-              // Texte en bas
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  fontFamily: 'Amiri',
+                child: Icon(
+                  icon,
+                  size: 45,
+                  color: iconColor,
                 ),
+              ),
+              const SizedBox(width: 20),
+              // Texte
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        fontFamily: 'Amiri',
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black.withOpacity(0.7),
+                        fontFamily: 'Amiri',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Flèche
+              Icon(
+                Icons.arrow_back_ios,
+                color: Colors.black.withOpacity(0.5),
+                size: 20,
               ),
             ],
           ),

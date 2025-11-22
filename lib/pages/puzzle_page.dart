@@ -57,7 +57,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
       title: 'المركبات',
       difficulty: 'صعب',
       imagePath: 'assets/images/puzzle4.png',
-      pieces: 16,
+      pieces: 9,
       backgroundColor: Colors.red,
     ),
     PuzzleItem(
@@ -86,7 +86,12 @@ class _PuzzlePageState extends State<PuzzlePage> {
         appBar: AppBar(
           title: const Text(
             'لعبة بازل',
-            style: TextStyle(fontFamily: 'Amiri'),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontFamily: 'Amiri',
+              ),
           ),
           backgroundColor: Colors.orangeAccent,
         ),
@@ -108,10 +113,10 @@ class _PuzzlePageState extends State<PuzzlePage> {
           Text(
             'اختر البازل الذي تريد لعبه',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
+              color: Color(0xFFF3663A),
               fontFamily: 'Amiri',
-              color: Colors.deepOrange,
             ),
           ),
           SizedBox(height: 8),
@@ -195,31 +200,12 @@ class _PuzzlePageState extends State<PuzzlePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildDifficultyBadge(puzzle),
           _buildPuzzleInfo(puzzle),
         ],
       ),
     );
   }
 
-  Widget _buildDifficultyBadge(PuzzleItem puzzle) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        puzzle.difficulty,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: puzzle.backgroundColor,
-          fontFamily: 'Amiri',
-        ),
-      ),
-    );
-  }
 
   Widget _buildPuzzleInfo(PuzzleItem puzzle) {
     return Column(

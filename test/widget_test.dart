@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-// Importe ton main.dart et toutes les pages utilisées
 import 'package:bidaya/main.dart';
 import 'package:bidaya/JeuxPage.dart';
-
 import 'package:bidaya/pages/letters_page.dart';
 import 'package:bidaya/pages/numbers_page.dart';
-import 'package:bidaya/pages/puzzle_page.dart';
-import 'package:bidaya/pages/memory_game_page.dart';
+import 'package:bidaya/widgets/game_card.dart'; // Import ajouté
+
 
 void main() {
   testWidgets('PageJeux displays all game titles', (WidgetTester tester) async {
-    await tester.pumpWidget(const JeuxEducatifApp());
+    await tester.pumpWidget(const MaterialApp(home: PageJeux()));
+    await tester.pumpAndSettle();
 
     expect(find.text('لعبة الحروف'), findsOneWidget);
     expect(find.text('لعبة الأرقام'), findsOneWidget);
@@ -20,23 +18,61 @@ void main() {
     expect(find.text('لعبة الذاكرة'), findsOneWidget);
   });
 
-  testWidgets('Navigates to LettersPage when tapped', (WidgetTester tester) async {
-    await tester.pumpWidget(const JeuxEducatifApp());
+  testWidgets('PageJeux displays header and description', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: PageJeux()));
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.text('لعبة الحروف'));
+    expect(find.text('إلعب معنا'), findsOneWidget);
+    expect(find.text('اختر اللعبة التي تريدها'), findsOneWidget);
+  });
+
+  testWidgets('Navigates to LettersPage when letters game is tapped', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PageJeux(),
+        routes: {
+          '/letters': (context) => const LettersPage(),
+        },
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final lettersFinder = find.text('لعبة الحروف');
+    expect(lettersFinder, findsOneWidget);
+
+    await tester.tap(lettersFinder, warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(find.byType(LettersPage), findsOneWidget);
   });
 
-  testWidgets('Navigates to NumbersPage when tapped', (WidgetTester tester) async {
-    await tester.pumpWidget(const JeuxEducatifApp());
-
-    await tester.tap(find.text('لعبة الأرقام'));
+  testWidgets('Has 4 game cards', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: PageJeux()));
     await tester.pumpAndSettle();
 
-    expect(find.byType(PageNumbersPage), findsOneWidget);
+    expect(find.byType(GameCard), findsNWidgets(4));
   });
 
-  // Tu peux ajouter des tests similaires pour PuzzlePage et MemoryGamePage
+  testWidgets('Game cards are tappable', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PageJeux(),
+        routes: {
+          '/numbers': (context) => const PageNumbersPage(),
+        },
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final numbersFinder = find.text('لعبة الأرقام');
+    expect(numbersFinder, findsOneWidget);
+
+    await tester.tap(numbersFinder, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    // Vérifier que la navigation a fonctionné
+    expect(find.byType(PageNumbersPage), findsOneWidget);
+  });
 }
