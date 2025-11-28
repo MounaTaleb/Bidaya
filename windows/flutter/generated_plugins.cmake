@@ -4,6 +4,14 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
+<<<<<<< HEAD
+=======
+  file_selector_windows
+  firebase_auth
+  firebase_core
+  flutter_timezone
+  permission_handler_windows
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

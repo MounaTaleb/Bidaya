@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # bideya
+=======
+# bidaya
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
 
 A new Flutter project.
 

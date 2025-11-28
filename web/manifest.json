@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
     "name": "bideya",
     "short_name": "bideya",
+=======
+    "name": "bidaya",
+    "short_name": "bidaya",
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

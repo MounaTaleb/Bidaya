@@ -1,6 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<<<<<<< HEAD
     <application
         android:label="bideya"
+=======
+    <!-- Ajout de la permission INTERNET -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+
+    <application
+        android:label="bidaya"
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -42,4 +58,8 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
+<<<<<<< HEAD
 </manifest>
+=======
+</manifest>
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c

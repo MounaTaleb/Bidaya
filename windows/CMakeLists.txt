@@ -1,10 +1,18 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+<<<<<<< HEAD
 project(bideya LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "bideya")
+=======
+project(bidaya LANGUAGES CXX)
+
+# The name of the executable created for the application. Change this to change
+# the on-disk name of your application.
+set(BINARY_NAME "bidaya")
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

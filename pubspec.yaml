@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 name: bideya
 description: "A new Flutter project."
 publish_to: 'none'
@@ -5,25 +6,126 @@ version: 1.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
+=======
+name: bidaya
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+<<<<<<< HEAD
   audioplayers: ^5.0.0
   shared_preferences: ^2.2.0
   flutter_svg: ^2.0.7
+=======
+  flutter_svg: ^2.2.2
+  video_player: ^2.9.1
+  image_picker: ^1.0.4
+  
+  path_provider: ^2.1.1
+  
+  flutter_dotenv: ^5.1.0
+   # 🔔 Local Notifications
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.2
+  flutter_local_notifications_platform_interface: ^7.2.0
+  permission_handler: ^11.3.0
+
+  flutter_timezone: ^4.1.1
+  google_generative_ai: ^0.4.7
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.18.0
+  audioplayers: 6.5.1
+
+
+  
+  # Google Sign In
+  google_sign_in: ^6.2.2
+  
+  # Pour gérer l'état
+  provider: ^6.1.2
+  
+  # Pour les requêtes HTTP (pour OTP via email)
+  http: ^1.2.0
+  
+  # Pour le stockage local
+  shared_preferences: ^2.3.3
+  firebase_dynamic_links: ^6.1.10
+
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+<<<<<<< HEAD
+=======
+  flutter_launcher_icons: ^0.13.1
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
 
 flutter:
   uses-material-design: true
 
   assets:
+<<<<<<< HEAD
     - assets/images/
     -  assets/images/lapin.png
 
     # - assets/sounds/
+=======
+    - assets/images/bidaya_logo.png
+    - assets/images/age.png
+    - assets/images/google.png
+    - assets/images/formulaire.png   
+    - assets/images/formulaire2.png                                         
+    - assets/images/nom.png
+    - assets/images/lapin.jpg 
+    - assets/videos/intro.mp4
+    - assets/images/avatar1.png
+    - assets/images/avatar2.png
+    - assets/images/avatar3.png
+    - assets/images/avatar4.png
+    - assets/images/avatar5.png
+    - assets/images/avatar6.png
+    - assets/images/letters.png
+    - assets/images/numbers.png
+    - assets/images/puzzle.png
+    - assets/images/puzzle1.png
+    - assets/images/puzzle2.png
+    - assets/images/puzzle3.png
+    - assets/images/puzzle4.png
+    - assets/images/puzzle5.png
+    - assets/images/puzzle6.png
+    - assets/images/book.png
+    - assets/images/sun.png
+    - assets/images/toy.jpg
+    - assets/images/pen.jpg
+    - assets/images/house.jpg
+    - assets/images/flower.jpg
+    - assets/images/car.jpg
+    - assets/images/apple.jpg
+    - assets/images/2.jpg
+    - assets/images/1.png
+    - assets/images/success.png
+    - assets/images/try_again.png
+    - assets/images/p1.png
+    - assets/images/lapin.png
+    - assets/images/bunny.png
+    - assets/audio/bg_music.mp3
+
+
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/bidaya_logo.png"
+>>>>>>> ac60c1bc376d2a7e2377722d10da3f4e38a7f18c
