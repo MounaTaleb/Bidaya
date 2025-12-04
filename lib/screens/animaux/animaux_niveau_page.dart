@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'animaux_jeu_page.dart';
+import '../../services/local_storage_service.dart'; // AJOUT: Import du service
 
 class AnimauxNiveauPage extends StatefulWidget {
   const AnimauxNiveauPage({super.key});
@@ -18,6 +19,10 @@ class _AnimauxNiveauPageState extends State<AnimauxNiveauPage>
   Map<int, int> scoresParNiveau = {};
   Map<int, bool> niveauxDebloques = {1: true};
 
+  // AJOUT: Instance du service de stockage
+  final LocalStorageService _storageService = LocalStorageService();
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -31,15 +36,90 @@ class _AnimauxNiveauPageState extends State<AnimauxNiveauPage>
     );
     _animationController.repeat(reverse: true);
 
-    for (int i = 2; i <= totalNiveaux; i++) {
-      niveauxDebloques[i] = false;
-    }
+    // AJOUT: Charger la progression au démarrage
+    _loadProgress();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // AJOUT: Charger la progression depuis le stockage local
+  Future<void> _loadProgress() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Récupérer le dernier niveau débloqué
+      final dernierNiveau = await _storageService.getLastLevel('animaux');
+
+      // Initialiser les niveaux débloqués
+      for (int i = 1; i <= totalNiveaux; i++) {
+        niveauxDebloques[i] = i <= dernierNiveau;
+      }
+
+      // Récupérer les scores et niveaux terminés
+      for (int i = 1; i <= totalNiveaux; i++) {
+        final score = await _storageService.getBestScore('animaux', i);
+        if (score > 0) {
+          scoresParNiveau[i] = score;
+        }
+
+        // Si le niveau est terminé, débloquer le suivant
+        final estTermine = await _storageService.isLevelCompleted('animaux', i);
+        if (estTermine && i < totalNiveaux) {
+          niveauxDebloques[i + 1] = true;
+        }
+      }
+
+      // Mettre à jour le niveau actuel
+      niveauActuel = dernierNiveau;
+
+    } catch (e) {
+      print('❌ Erreur lors du chargement de la progression: $e');
+      // Valeurs par défaut
+      for (int i = 2; i <= totalNiveaux; i++) {
+        niveauxDebloques[i] = false;
+      }
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  // AJOUT: Sauvegarder la progression
+  Future<void> _saveProgress() async {
+    try {
+      // Sauvegarder tous les niveaux terminés
+      for (int niveau in scoresParNiveau.keys) {
+        if (scoresParNiveau[niveau]! >= 3) {
+          await _storageService.saveProgress(
+            category: 'animaux',
+            niveau: niveau,
+            score: scoresParNiveau[niveau]!,
+            niveauTermine: true,
+          );
+        }
+      }
+
+      // Sauvegarder le dernier niveau débloqué
+      if (niveauActuel > 1) {
+        await _storageService.saveProgress(
+          category: 'animaux',
+          niveau: niveauActuel,
+          score: scoresParNiveau[niveauActuel] ?? 0,
+          niveauTermine: false,
+        );
+      }
+
+      print('✅ Progression sauvegardée pour les animaux');
+    } catch (e) {
+      print('❌ Erreur lors de la sauvegarde: $e');
+    }
   }
 
   void demarrerNiveau(int niveau) {
@@ -49,8 +129,8 @@ class _AnimauxNiveauPageState extends State<AnimauxNiveauPage>
         MaterialPageRoute(
           builder: (context) => AnimauxJeuPage(
             niveau: niveau,
-            onNiveauTermine: (score) {
-              _gererFinNiveau(niveau, score);
+            onNiveauTermine: (score) async {
+              await _gererFinNiveau(niveau, score);
             },
           ),
         ),
@@ -58,15 +138,20 @@ class _AnimauxNiveauPageState extends State<AnimauxNiveauPage>
     }
   }
 
-  void _gererFinNiveau(int niveau, int score) {
+  Future<void> _gererFinNiveau(int niveau, int score) async {
     setState(() {
       scoresParNiveau[niveau] = score;
 
       if (score >= 3 && niveau < totalNiveaux) {
         niveauxDebloques[niveau + 1] = true;
-        niveauActuel = niveau + 1;
+        if (niveau + 1 > niveauActuel) {
+          niveauActuel = niveau + 1;
+        }
       }
     });
+
+    // AJOUT: Sauvegarder la progression après chaque niveau
+    await _saveProgress();
   }
 
   // Génère les positions en serpentant (gauche-droite-gauche)
@@ -209,6 +294,15 @@ class _AnimauxNiveauPageState extends State<AnimauxNiveauPage>
                           ],
                         ),
                       ),
+                    if (scoresParNiveau.containsKey(niveau))
+                      Text(
+                        '${scoresParNiveau[niveau]}/5',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -221,6 +315,33 @@ class _AnimauxNiveauPageState extends State<AnimauxNiveauPage>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF0F8FF),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  const Color(0xFF795548),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'جاري تحميل المستويات...',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Color(0xFF795548),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -291,6 +412,25 @@ class _AnimauxNiveauPageState extends State<AnimauxNiveauPage>
               ),
             ),
 
+            // Légende des couleurs
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF795548).withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildLegendItem(const Color(0xFF795548), 'مفتوح'),
+                  _buildLegendItem(Colors.grey, 'مقفل'),
+                  _buildLegendItem(const Color(0xFFFFD700), 'خاص'),
+                ],
+              ),
+            ),
+
             // Zone scrollable sans les lignes de chemin
             Expanded(
               child: SingleChildScrollView(
@@ -356,6 +496,30 @@ class _AnimauxNiveauPageState extends State<AnimauxNiveauPage>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String text) {
+    return Row(
+      children: [
+        Container(
+          width: 15,
+          height: 15,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade400),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF795548),
+          ),
+        ),
+      ],
     );
   }
 }

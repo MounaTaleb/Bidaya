@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/animaux_model.dart';
+import '../../services/local_storage_service.dart'; // AJOUT: Import du service de stockage
 
 class AnimauxJeuPage extends StatefulWidget {
   final int niveau;
@@ -25,6 +26,9 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
   Color couleurMessage = Colors.green;
   bool showInfo = false;
 
+  // AJOUT: Instance du service de stockage
+  final LocalStorageService _storageService = LocalStorageService();
+
   @override
   void initState() {
     super.initState();
@@ -32,20 +36,38 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
   }
 
   void _genererQuestions() {
-    // Prendre 5 animaux pour le niveau actuel
-    int startIndex = (widget.niveau - 1) * 5;
-    int endIndex = startIndex + 5;
+    // Pour supporter tous les 25 niveaux avec répétition
+    List<Animal> animauxDisponibles = List.from(animaux);
+    animauxDisponibles.shuffle();
 
-    if (endIndex > animaux.length) {
-      endIndex = animaux.length;
+    int questionsNecessaires = 5;
+    List<Animal> animauxSelectionnes = [];
+
+    if (animauxDisponibles.length >= questionsNecessaires) {
+      int startIndex = ((widget.niveau - 1) * 5) % animauxDisponibles.length;
+
+      for (int i = 0; i < questionsNecessaires; i++) {
+        int index = (startIndex + i) % animauxDisponibles.length;
+        animauxSelectionnes.add(animauxDisponibles[index]);
+      }
+
+      animauxSelectionnes.shuffle();
+    } else {
+      animauxSelectionnes = List.from(animauxDisponibles);
+
+      while (animauxSelectionnes.length < questionsNecessaires) {
+        int randomIndex = (widget.niveau + animauxSelectionnes.length) % animauxDisponibles.length;
+        animauxSelectionnes.add(animauxDisponibles[randomIndex]);
+      }
+
+      animauxSelectionnes = animauxSelectionnes.take(5).toList();
     }
 
-    List<Animal> animauxNiveau = animaux.sublist(startIndex, endIndex);
-
-    questions = animauxNiveau.map((animal) {
-      // Générer des questions variées
+    questions = [];
+    for (int i = 0; i < animauxSelectionnes.length; i++) {
+      final animal = animauxSelectionnes[i];
       List<String> typesQuestions = ['nom', 'petit', 'habitat'];
-      String type = typesQuestions[questionActuelle % 3];
+      String type = typesQuestions[i % 3]; // CORRECTION: utiliser i au lieu de questions.length
 
       String question;
       String reponseCorrecte;
@@ -55,37 +77,34 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
         case 'nom':
           question = 'ما اسم صغير ${animal.nom}؟';
           reponseCorrecte = animal.petit;
-          // MODIFICATION : Prendre seulement 2 mauvaises réponses
           List<String> autresPetits = animaux
               .where((a) => a.petit != animal.petit)
               .map((a) => a.petit)
               .toList();
           autresPetits.shuffle();
-          options = [animal.petit, ...autresPetits.take(2)]; // 2 au lieu de 3
+          options = [animal.petit, ...autresPetits.take(2)];
           break;
 
         case 'petit':
           question = 'ما اسم الحيوان الذي صغيره يسمى "${animal.petit}"؟';
           reponseCorrecte = animal.nom;
-          // MODIFICATION : Prendre seulement 2 mauvaises réponses
           List<String> autresNoms = animaux
               .where((a) => a.nom != animal.nom)
               .map((a) => a.nom)
               .toList();
           autresNoms.shuffle();
-          options = [animal.nom, ...autresNoms.take(2)]; // 2 au lieu de 3
+          options = [animal.nom, ...autresNoms.take(2)];
           break;
 
         case 'habitat':
           question = 'أين يعيش حيوان ${animal.nom}؟';
           reponseCorrecte = animal.habitat;
-          // MODIFICATION : Prendre seulement 2 mauvaises réponses
           List<String> autresHabitats = animaux
               .where((a) => a.habitat != animal.habitat)
               .map((a) => a.habitat)
               .toList();
           autresHabitats.shuffle();
-          options = [animal.habitat, ...autresHabitats.take(2)]; // 2 au lieu de 3
+          options = [animal.habitat, ...autresHabitats.take(2)];
           break;
 
         default:
@@ -95,17 +114,32 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
 
       options.shuffle();
 
-      return {
+      questions.add({
         'question': question,
         'reponseCorrecte': reponseCorrecte,
         'options': options,
         'animal': animal,
         'type': type,
-      };
-    }).toList();
+      });
+    }
   }
 
-  void _verifierReponse(String reponse) {
+  // AJOUT: Fonction pour sauvegarder la progression
+  Future<void> _saveProgress() async {
+    try {
+      await _storageService.saveProgress(
+        category: 'animaux', // Catégorie pour les animaux
+        niveau: widget.niveau,
+        score: score,
+        niveauTermine: score >= 3,
+      );
+      print('✅ Progression sauvegardée pour le niveau ${widget.niveau}');
+    } catch (e) {
+      print('❌ Erreur lors de la sauvegarde: $e');
+    }
+  }
+
+  void _verifierReponse(String reponse) async { // AJOUT: async
     final bool estCorrecte = reponse == questions[questionActuelle]['reponseCorrecte'];
 
     setState(() {
@@ -123,7 +157,7 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
       }
     });
 
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () async { // AJOUT: async
       if (questionActuelle < questions.length - 1) {
         setState(() {
           questionActuelle++;
@@ -133,11 +167,14 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
           showInfo = false;
         });
       } else {
+        // AJOUT: Sauvegarder la progression avant d'afficher le dialogue
+        await _saveProgress();
+
         widget.onNiveauTermine(score);
-        Navigator.pop(context);
 
         showDialog(
           context: context,
+          barrierDismissible: false, // Empêcher la fermeture accidentelle
           builder: (context) => AlertDialog(
             backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(
@@ -157,8 +194,8 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: score >= 3
-                        ? const Color(0xFF4CAF50)
-                        : const Color(0xFFFFA726),
+                        ? const Color.fromARGB(255, 121, 85, 72) // Color(0xFF795548)
+                        : const Color.fromARGB(255, 255, 167, 38), // Color(0xFFFFA726)
                   ),
                 ),
               ],
@@ -170,14 +207,17 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF795548), Color(0xFFA1887F)],
+                      colors: [
+                        Color.fromARGB(255, 121, 85, 72), // Color(0xFF795548)
+                        Color.fromARGB(255, 161, 136, 127) // Color(0xFFA1887F)
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withAlpha(25), // withOpacity(0.1)
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -187,8 +227,8 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                     children: [
                       Text(
                         score >= 3
-                            ? 'لقد نجحت في هذا المستوى!'
-                            : 'لم تحقق النتيجة المطلوبة',
+                            ? 'لقد نجحت في المستوى ${widget.niveau}!'
+                            : 'لم تحقق النتيجة المطلوبة في المستوى ${widget.niveau}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 18,
@@ -209,7 +249,7 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF795548),
+                            color: Color.fromARGB(255, 121, 85, 72), // Color(0xFF795548)
                           ),
                         ),
                       ),
@@ -222,15 +262,15 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF9E6),
+                        color: const Color.fromARGB(255, 255, 249, 230), // Color(0xFFFFF9E6)
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
+                      child: Text(
                         'يجب أن تحصل على 3/5 على الأقل للانتقال للمستوى التالي',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF666666),
+                          color: Color.fromARGB(255, 102, 102, 102), // Color(0xFF666666)
                         ),
                       ),
                     ),
@@ -240,9 +280,12 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
             actions: [
               Center(
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.pop(context); // Fermer la boîte de dialogue
+                    Navigator.pop(context); // Retourner à l'écran précédent
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF795548),
+                    backgroundColor: const Color.fromARGB(255, 121, 85, 72), // Color(0xFF795548)
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
@@ -265,45 +308,80 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
   }
 
   String _getEmojiForAnimal(String nom) {
-    switch (nom) {
-      case 'الأسد': return '🦁';
-      case 'الفيل': return '🐘';
-      case 'الحصان': return '🐎';
-      case 'البقرة': return '🐄';
-      case 'الخروف': return '🐑';
-      case 'النمر': return '🐅';
-      case 'الدب': return '🐻';
-      case 'الغزال': return '🦌';
-      case 'الذئب': return '🐺';
-      case 'القرد': return '🐵';
-      case 'الدلفين': return '🐬';
-      case 'الحوت': return '🐋';
-      case 'القرش': return '🦈';
-      case 'السلحفاة': return '🐢';
-      case 'نجم البحر': return '⭐';
-      default: return '🐾';
-    }
+    final emojiMap = {
+      'الأسد': '🦁',
+      'الفيل': '🐘',
+      'الحصان': '🐎',
+      'البقرة': '🐄',
+      'الخروف': '🐑',
+      'النمر': '🐅',
+      'الدب': '🐻',
+      'الغزال': '🦌',
+      'الذئب': '🐺',
+      'القرد': '🐒', // أكثر دقّة للقرد
+      'الدلفين': '🐬',
+      'الحوت': '🐋',
+      'القرش': '🦈',
+      'السلحفاة': '🐢',
+      'نجم البحر': '🌟', // ⭐ ليس حيوان — استبدلته بـ 🌟 الممكنة الوحيدة
+      'الفراشة': '🦋',
+      'النحلة': '🐝',
+      'العصفور': '🐦',
+      'البطريق': '🐧',
+      'البومة': '🦉',
+      'الخفاش': '🦇',
+      'الثعلب': '🦊',
+      'الزرافة': '🦒',
+      'فرس النهر': '🦛',
+      'الكوالا': '🐨',
+      'الباندا': '🐼',
+      'الكسلان (Sloth)': '🦥',
+      'الظبي': '🦌', // نفس الغزال
+      'الكنغر': '🦘',
+      'الراكون': '🦝',
+      'الهامستر': '🐹',
+      'الأرنب': '🐰',
+      'الفأر': '🐭',
+      'السنجاب': '🐿️',
+      'القنفذ': '🦔',
+      'التمساح': '🐊',
+      'الحرباء': '🦎',
+      'الأفعى': '🐍',
+      'العقرب': '🦂',
+      'العنكبوت': '🕷️',
+      'النملة': '🐜',
+      'الصرصور': '🪳',
+      'الجندب': '🦗',
+      'الحلزون': '🐌',
+      'قنديل البحر': '🪼', // الإيموجي الصحيح
+      'الأخطبوط': '🐙',
+      'السمكة': '🐟',
+    };
+
+    return emojiMap[nom] ?? '🐾';
   }
 
   @override
   Widget build(BuildContext context) {
     if (questions.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xFFEFEBE9),
+        backgroundColor: const Color.fromARGB(255, 239, 235, 233), // Color(0xFFEFEBE9)
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF795548)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  const Color.fromARGB(255, 121, 85, 72), // Color(0xFF795548)
+                ),
                 strokeWidth: 5,
               ),
               const SizedBox(height: 20),
-              const Text(
-                'جاري التحميل...',
-                style: TextStyle(
+              Text(
+                'جاري تحميل المستوى ${widget.niveau}...',
+                style: const TextStyle(
                   fontSize: 18,
-                  color: Color(0xFF795548),
+                  color: Color.fromARGB(255, 121, 85, 72), // Color(0xFF795548)
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -317,17 +395,20 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
     final Animal animal = question['animal'];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEFEBE9),
+      backgroundColor: const Color.fromARGB(255, 239, 235, 233), // Color(0xFFEFEBE9)
       body: SafeArea(
         child: Column(
           children: [
             // Header avec dégradé marron
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF795548), Color(0xFFA1887F)],
+                  colors: [
+                    Color.fromARGB(255, 121, 85, 72), // Color(0xFF795548)
+                    Color.fromARGB(255, 161, 136, 127) // Color(0xFFA1887F)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -343,7 +424,7 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios_rounded,
-                        size: 24, color: Colors.white),
+                        size: 22, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Expanded(
@@ -351,7 +432,7 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                       '🐾 المستوى ${widget.niveau} 🐾',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         shadows: [
@@ -371,111 +452,61 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
 
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
                     // Score et progression
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF795548), Color(0xFFA1887F)],
-                            ),
-                            borderRadius: BorderRadius.circular(25),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF795548).withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              const Text(
-                                '⭐ ',
-                                style: TextStyle(fontSize: 20),
-                              ),
-                              Text(
-                                '$score/${questions.length}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF8D6E63), Color(0xFFBCAAA4)],
-                            ),
-                            borderRadius: BorderRadius.circular(25),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF8D6E63).withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            '${questionActuelle + 1}/${questions.length} 📝',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildStatCard('⭐ النقاط', '$score/${questions.length}', [
+                            const Color.fromARGB(255, 121, 85, 72),
+                            const Color.fromARGB(255, 161, 136, 127)
+                          ]),
+                          _buildStatCard('📝 السؤال', '${questionActuelle + 1}/${questions.length}', [
+                            const Color.fromARGB(255, 141, 110, 99),
+                            const Color.fromARGB(255, 188, 170, 164)
+                          ]),
+                        ],
+                      ),
                     ),
-
-                    const SizedBox(height: 20),
 
                     // Barre de progression
                     Container(
-                      height: 20,
+                      height: 12,
+                      margin: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 5,
+                            color: Colors.black.withAlpha(25),
+                            blurRadius: 3,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
                           value: (questionActuelle + 1) / questions.length,
                           backgroundColor: Colors.transparent,
                           valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF795548),
+                            Color.fromARGB(255, 121, 85, 72),
                           ),
-                          minHeight: 20,
+                          minHeight: 12,
                         ),
                       ),
                     ),
-
-                    const SizedBox(height: 25),
 
                     // Message de feedback
                     if (messageFeedback != null)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        margin: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.all(15),
+                        margin: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: couleurMessage == const Color(0xFF4CAF50)
@@ -488,12 +519,14 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                               const Color(0xFFFF8787)
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(15),
                           boxShadow: [
                             BoxShadow(
-                              color: couleurMessage.withOpacity(0.4),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
+                              color: couleurMessage == const Color(0xFF4CAF50)
+                                  ? const Color(0xFF4CAF50).withAlpha(100)
+                                  : const Color(0xFFFF6B6B).withAlpha(100),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -501,43 +534,44 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                           messageFeedback!,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
                       ),
 
-                    // Question avec design enfantin
+                    // Question
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(30),
+                      padding: const EdgeInsets.all(20),
+                      margin: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF795548).withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+                            color: const Color.fromARGB(255, 121, 85, 72).withAlpha(50),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
                           ),
                         ],
                         border: Border.all(
-                          color: const Color(0xFF795548),
-                          width: 3,
+                          color: const Color.fromARGB(255, 121, 85, 72),
+                          width: 2,
                         ),
                       ),
                       child: Column(
                         children: [
                           Text(
                             _getEmojiForAnimal(animal.nom),
-                            style: const TextStyle(fontSize: 60),
+                            style: const TextStyle(fontSize: 50),
                           ),
                           const SizedBox(height: 15),
                           Text(
                             question['question'],
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                               height: 1.4,
@@ -548,81 +582,72 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 25),
-
-                    // Information sur l'animal (affichée après réponse)
+                    // Information sur l'animal
                     if (showInfo)
-                      Container(
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
                         width: double.infinity,
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(15),
+                        margin: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
-                          borderRadius: BorderRadius.circular(20),
+                          color: const Color.fromARGB(255, 245, 245, 245),
+                          borderRadius: BorderRadius.circular(15),
                           border: Border.all(
-                            color: const Color(0xFF795548).withOpacity(0.3),
+                            color: const Color.fromARGB(255, 121, 85, 72).withAlpha(100),
                             width: 2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(20),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
                               '🐾 معلومات عن الحيوان:',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF795548),
+                                color: Color.fromARGB(255, 121, 85, 72),
                               ),
                             ),
                             const SizedBox(height: 10),
-                            Text(
-                              'الاسم: ${animal.nom}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            Text(
-                              'الصغير: ${animal.petit}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            Text(
-                              'الموطن: ${animal.habitat}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            Text(
-                              'التغذية: ${animal.alimentation}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
-                              ),
-                            ),
+                            _buildInfoRow('الاسم', animal.nom),
+                            _buildInfoRow('الصغير', animal.petit),
+                            _buildInfoRow('الموطن', animal.habitat),
+                            _buildInfoRow('التغذية', animal.alimentation),
                             const SizedBox(height: 10),
-                            Text(
-                              animal.faitInteressant,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.black54,
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: const Color.fromARGB(255, 121, 85, 72).withAlpha(50),
+                                ),
                               ),
-                              textAlign: TextAlign.center,
+                              child: Text(
+                                animal.faitInteressant,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.black54,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ],
                         ),
                       ),
 
-                    const SizedBox(height: 30),
-
-                    // Options de réponse - MAINTENANT SEULEMENT 3 CHOIX
+                    // Options de réponse
                     ...question['options'].map<Widget>((option) {
                       bool estCorrecte = option == question['reponseCorrecte'];
-                      Color couleurBouton = const Color(0xFF795548);
+                      Color couleurBouton = const Color.fromARGB(255, 121, 85, 72);
                       IconData? icone;
 
                       if (reponseSelectionnee != null) {
@@ -637,53 +662,51 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
                         }
                       }
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 15),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: couleurBouton.withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: couleurBouton.withAlpha(50),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: reponseSelectionnee == null
+                              ? () => _verifierReponse(option)
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: couleurBouton,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 60),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (icone != null) ...[
+                                Icon(icone, size: 24),
+                                const SizedBox(width: 8),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  option,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ],
-                          ),
-                          child: ElevatedButton(
-                            onPressed: reponseSelectionnee == null
-                                ? () => _verifierReponse(option)
-                                : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: couleurBouton,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 70),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 15),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (icone != null) ...[
-                                  Icon(icone, size: 28),
-                                  const SizedBox(width: 10),
-                                ],
-                                Flexible(
-                                  child: Text(
-                                    option,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                       );
@@ -696,6 +719,75 @@ class _AnimauxJeuPageState extends State<AnimauxJeuPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // AJOUT: Méthode pour créer une carte de statistiques
+  Widget _buildStatCard(String title, String value, List<Color> colors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: colors),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: colors.first.withAlpha(75),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // AJOUT: Méthode pour créer une ligne d'information
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

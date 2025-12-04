@@ -1,4 +1,5 @@
-// models/math_model.dart
+// math_problems.dart
+
 class ProblemeMath {
   final String question;
   final int reponseCorrecte;
@@ -14,7 +15,8 @@ class ProblemeMath {
 }
 
 List<ProblemeMath> problemesMath = [
-  // Niveau 1 (Facile - Additions simples)
+
+  // -------------------- Niveau 1 --------------------
   ProblemeMath(
     question: 'إذا كان عندي 3 تفاحات وأعطتني أمي 2 تفاحتين أخريين، فكم تفاحة أصبح لدي؟',
     reponseCorrecte: 5,
@@ -41,7 +43,7 @@ List<ProblemeMath> problemesMath = [
     options: [8, 9, 10, 7],
   ),
 
-  // Niveau 2 (Additions et soustractions)
+  // -------------------- Niveau 2 --------------------
   ProblemeMath(
     question: 'اشترى علي كتاب بـ 8 دنانير وقلم بـ 3 دنانير. كم دفع في المجموع؟',
     reponseCorrecte: 11,
@@ -68,7 +70,7 @@ List<ProblemeMath> problemesMath = [
     options: [4, 5, 6, 7],
   ),
 
-  // Niveau 3 (Multiplication et division)
+  // -------------------- Niveau 3 --------------------
   ProblemeMath(
     question: 'لدى كل طفل 3 كرات. إذا كان هناك 4 أطفال، فكم كرة في المجموع؟',
     reponseCorrecte: 12,
@@ -95,7 +97,7 @@ List<ProblemeMath> problemesMath = [
     options: [10, 12, 14, 16],
   ),
 
-  // Niveau 4 (Problèmes complexes)
+  // -------------------- Niveau 4 --------------------
   ProblemeMath(
     question: 'مريم عمرها 8 سنوات، وعمر أخيها 12 سنة. ما الفرق بين عمريهما؟',
     reponseCorrecte: 4,
@@ -120,5 +122,57 @@ List<ProblemeMath> problemesMath = [
     question: 'اشترى أحمد 3 كيلوغرامات من التفاح بسعر 5 دنانير للكيلو. كم دفع؟',
     reponseCorrecte: 15,
     options: [12, 15, 18, 20],
+  ),
+
+  // -------------------- EXTRA Questions (10) --------------------
+  ProblemeMath(
+    question: 'لدى منى 20 قطعة شوكولاتة وأعطت 5 لصديقتها. كم بقي معها؟',
+    reponseCorrecte: 15,
+    options: [10, 12, 15, 17],
+  ),
+  ProblemeMath(
+    question: 'كم نتيجة: 14 - 9 + 5 ؟',
+    reponseCorrecte: 10,
+    options: [8, 9, 10, 11],
+  ),
+  ProblemeMath(
+    question: 'إذا كان ثمن اللعبتين 7 دنانير للواحدة، كم ثمن 3 لعب؟',
+    reponseCorrecte: 21,
+    options: [18, 20, 21, 24],
+  ),
+  ProblemeMath(
+    question: 'قطة لديها 4 صغار. كم عدد الأرجل لجميع القطط؟ (عدد الأرجل = 4)',
+    reponseCorrecte: 20,
+    options: [16, 20, 24, 28],
+  ),
+  ProblemeMath(
+    question: 'نتيجة: 9 × 3 ؟',
+    reponseCorrecte: 27,
+    options: [24, 27, 30, 21],
+  ),
+  ProblemeMath(
+    question: 'قضى سامي 45 دقيقة في الدراسة و 30 دقيقة في اللعب. كم استغرق في المجموع؟',
+    reponseCorrecte: 75,
+    options: [60, 70, 75, 80],
+  ),
+  ProblemeMath(
+    question: 'بستان فيه 30 شجرة، قام المزارع بقطع 6. كم بقي؟',
+    reponseCorrecte: 24,
+    options: [20, 22, 24, 26],
+  ),
+  ProblemeMath(
+    question: 'ما هو ناتج 48 ÷ 6 ؟',
+    reponseCorrecte: 8,
+    options: [6, 7, 8, 9],
+  ),
+  ProblemeMath(
+    question: 'في الفصل 18 تلميذاً، غاب 3. كم حضر اليوم؟',
+    reponseCorrecte: 15,
+    options: [14, 15, 16, 17],
+  ),
+  ProblemeMath(
+    question: 'لدى تاجر 50 تفاحة وباع 23. كم بقي لديه؟',
+    reponseCorrecte: 27,
+    options: [25, 27, 28, 30],
   ),
 ];

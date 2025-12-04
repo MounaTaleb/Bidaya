@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'notificationService.dart';
 import 'home_page.dart';
 import 'audio_service.dart';
+import 'services/local_storage_service.dart'; // AJOUT IMPORT
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +23,9 @@ void main() async {
 
   // Planifier les notifications quotidiennes
   await notificationService.scheduleDailyNotifications();
+
+  // AJOUT: Initialisation du stockage local
+  await LocalStorageService().init();
 
   runApp(const MyApp());
 }

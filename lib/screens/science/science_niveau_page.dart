@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'science_jeu_page.dart';
 
 class ScienceNiveauPage extends StatefulWidget {
@@ -31,15 +32,117 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
     );
     _animationController.repeat(reverse: true);
 
-    for (int i = 2; i <= totalNiveaux; i++) {
-      niveauxDebloques[i] = false;
-    }
+    // Charger les données depuis le stockage local
+    _chargerDonnees();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Sauvegarder les données dans le stockage local
+  Future<void> _sauvegarderDonnees() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Sauvegarder les scores
+    final scoresJson = scoresParNiveau.entries.map((e) => '${e.key}:${e.value}').join(';');
+    await prefs.setString('science_scores', scoresJson);
+
+    // Sauvegarder les niveaux débloqués
+    final niveauxJson = niveauxDebloques.entries.where((e) => e.value).map((e) => e.key.toString()).join(';');
+    await prefs.setString('science_niveaux_debloques', niveauxJson);
+
+    // Sauvegarder le niveau actuel
+    await prefs.setInt('science_niveau_actuel', niveauActuel);
+  }
+
+  // Charger les données depuis le stockage local
+  Future<void> _chargerDonnees() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Charger les scores
+    final scoresJson = prefs.getString('science_scores') ?? '';
+    if (scoresJson.isNotEmpty) {
+      scoresParNiveau = {};
+      final scoresList = scoresJson.split(';');
+      for (final score in scoresList) {
+        final parts = score.split(':');
+        if (parts.length == 2) {
+          final niveau = int.tryParse(parts[0]);
+          final scoreValue = int.tryParse(parts[1]);
+          if (niveau != null && scoreValue != null) {
+            scoresParNiveau[niveau] = scoreValue;
+          }
+        }
+      }
+    }
+
+    // Charger les niveaux débloqués (par défaut seulement le niveau 1)
+    niveauxDebloques = {1: true};
+    final niveauxJson = prefs.getString('science_niveaux_debloques') ?? '1';
+    final niveauxList = niveauxJson.split(';');
+    for (final niveauStr in niveauxList) {
+      final niveau = int.tryParse(niveauStr);
+      if (niveau != null && niveau > 1) {
+        niveauxDebloques[niveau] = true;
+      }
+    }
+
+    // Charger le niveau actuel
+    niveauActuel = prefs.getInt('science_niveau_actuel') ?? 1;
+
+    // S'assurer que tous les niveaux jusqu'au niveau actuel sont débloqués
+    for (int i = 1; i <= niveauActuel; i++) {
+      niveauxDebloques[i] = true;
+    }
+
+    // Initialiser les niveaux non spécifiés à false
+    for (int i = 1; i <= totalNiveaux; i++) {
+      if (!niveauxDebloques.containsKey(i)) {
+        niveauxDebloques[i] = false;
+      }
+    }
+
+    setState(() {});
+  }
+
+  // Réinitialiser toutes les données
+  Future<void> _reinitialiserProgression() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إعادة التعيين'),
+        content: const Text('هل أنت متأكد أنك تريد إعادة تعيين جميع المستويات؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('science_scores');
+              await prefs.remove('science_niveaux_debloques');
+              await prefs.remove('science_niveau_actuel');
+
+              setState(() {
+                scoresParNiveau.clear();
+                niveauxDebloques = {1: true};
+                niveauActuel = 1;
+                for (int i = 2; i <= totalNiveaux; i++) {
+                  niveauxDebloques[i] = false;
+                }
+              });
+
+              Navigator.pop(context);
+            },
+            child: const Text('نعم'),
+          ),
+        ],
+      ),
+    );
   }
 
   void demarrerNiveau(int niveau) {
@@ -58,7 +161,7 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
     }
   }
 
-  void _gererFinNiveau(int niveau, int score) {
+  void _gererFinNiveau(int niveau, int score) async {
     setState(() {
       scoresParNiveau[niveau] = score;
 
@@ -67,24 +170,25 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
         niveauActuel = niveau + 1;
       }
     });
+
+    // Sauvegarder après chaque niveau terminé
+    await _sauvegarderDonnees();
   }
 
   // Génère les positions en serpentant (gauche-droite-gauche)
   List<Offset> _genererPositionsPath(double screenWidth, double screenHeight) {
     List<Offset> positions = [];
-    double verticalSpacing = 70; // Espacement vertical entre les cercles (réduit)
-    double startY = 80; // Position Y de départ
+    double verticalSpacing = 70;
+    double startY = 80;
 
     for (int i = 0; i < totalNiveaux; i++) {
       double y = startY + (i * verticalSpacing);
       double x;
 
-      // Créer un effet de serpent : gauche-centre-droite-centre
-      int pattern = (i ~/ 3) % 2; // Change de direction tous les 3 niveaux
+      int pattern = (i ~/ 3) % 2;
       int position = i % 3;
 
       if (pattern == 0) {
-        // Gauche -> Centre -> Droite
         if (position == 0) {
           x = screenWidth * 0.2;
         } else if (position == 1) {
@@ -93,7 +197,6 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
           x = screenWidth * 0.8;
         }
       } else {
-        // Droite -> Centre -> Gauche
         if (position == 0) {
           x = screenWidth * 0.8;
         } else if (position == 1) {
@@ -126,9 +229,28 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
       icone = Icons.play_arrow; // Flèche pour actif
     }
 
+    // Couleurs spéciales pour les niveaux multiples de 5
+    Color couleurDebut;
+    Color couleurFin;
+
+    if (estVerrouille) {
+      couleurDebut = Colors.grey.shade400;
+      couleurFin = Colors.grey.shade300;
+    } else if (niveau % 5 == 0) {
+      // Niveaux spéciaux (5, 10, 15, 20, 25) en doré
+      couleurDebut = const Color(0xFFFFD700);
+      couleurFin = const Color(0xFFFFA000);
+    } else if (estComplete) {
+      couleurDebut = const Color(0xFF1976D2);
+      couleurFin = const Color(0xFF42A5F5);
+    } else {
+      couleurDebut = const Color(0xFF1976D2);
+      couleurFin = const Color(0xFF42A5F5);
+    }
+
     return Positioned(
       top: position.dy,
-      left: position.dx - 40, // Centre le cercle (80/2)
+      left: position.dx - 40,
       child: AnimatedBuilder(
         animation: _bounceAnimation,
         builder: (context, child) {
@@ -141,20 +263,8 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
                 height: 80,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: estVerrouille
-                      ? LinearGradient(
-                    colors: [Colors.grey.shade400, Colors.grey.shade300],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  )
-                      : estComplete
-                      ? const LinearGradient(
-                    colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  )
-                      : const LinearGradient(
-                    colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
+                  gradient: LinearGradient(
+                    colors: [couleurDebut, couleurFin],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -162,24 +272,45 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
                     BoxShadow(
                       color: estVerrouille
                           ? Colors.grey.withOpacity(0.4)
-                          : const Color(0xFF1565C0).withOpacity(0.6),
-                      blurRadius: 0,
+                          : (niveau % 5 == 0
+                          ? const Color(0xFFFFA000).withOpacity(0.6)
+                          : const Color(0xFF1565C0).withOpacity(0.6)),
+                      blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
                   ],
                   border: Border.all(
                     color: estVerrouille
                         ? Colors.grey.shade500
-                        : const Color(0xFF1976D2),
+                        : (niveau % 5 == 0 ? const Color(0xFFFFA000) : const Color(0xFF1976D2)),
                     width: 3,
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    icone,
-                    color: Colors.white,
-                    size: 38,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icone,
+                      color: Colors.white,
+                      size: niveau % 5 == 0 ? 32 : 30,
+                    ),
+                    if (!estVerrouille)
+                      Text(
+                        '$niveau',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              offset: const Offset(1, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -228,7 +359,7 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
                   ),
                   const Expanded(
                     child: Text(
-                      '🔬 إيقاظ علمي 🔬',
+                      '🔬 عالم العلوم - 25 مستوى 🔬',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 22,
@@ -244,12 +375,43 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 40),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    onSelected: (value) {
+                      if (value == 'reset') {
+                        _reinitialiserProgression();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'reset',
+                        child: Row(
+                          children: [
+                            Icon(Icons.restart_alt, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('إعادة التعيين'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
 
-            // Zone scrollable avec le chemin serpentant
+            // Indicateur de progression
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildProgressIndicator('المستوى الحالي', '$niveauActuel/$totalNiveaux'),
+                  _buildProgressIndicator('المستويات المكتملة', '${scoresParNiveau.length}/$totalNiveaux'),
+                ],
+              ),
+            ),
+
+            // Zone scrollable
             Expanded(
               child: SingleChildScrollView(
                 child: Container(
@@ -264,7 +426,6 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
                   ),
                   child: Stack(
                     children: [
-                      // Générer tous les cercles en serpentant
                       ...List.generate(
                         totalNiveaux,
                             (index) => _buildCircleNiveau(index + 1, positions[index]),
@@ -276,6 +437,43 @@ class _ScienceNiveauPageState extends State<ScienceNiveauPage>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator(String title, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1976D2).withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF1976D2),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Color(0xFF1976D2),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

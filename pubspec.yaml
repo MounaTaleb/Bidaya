@@ -18,7 +18,7 @@ dependencies:
   path_provider: ^2.1.1
   
   flutter_dotenv: ^5.1.0
-   # 🔔 Local Notifications
+  # 🔔 Local Notifications
   flutter_local_notifications: ^17.2.3
   timezone: ^0.9.2
   flutter_local_notifications_platform_interface: ^7.2.0
@@ -29,21 +29,22 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.3
   firebase_messaging: ^15.0.0
-  audioplayers: 6.5.1
+  audioplayers: ^6.5.1
 
 
-  
+
   # Google Sign In
   google_sign_in: ^6.2.2
-  
+
   # Pour gérer l'état
   provider: ^6.1.2
-  
+
   # Pour les requêtes HTTP (pour OTP via email)
   http: ^1.2.0
-  
-  # Pour le stockage local
+
+  # Pour le stockage local - AJOUTÉ CORRECTEMENT
   shared_preferences: ^2.3.3
+
   firebase_dynamic_links: ^6.1.10
 
 
@@ -60,10 +61,10 @@ flutter:
     - assets/images/bidaya_logo.png
     - assets/images/age.png
     - assets/images/google.png
-    - assets/images/formulaire.png   
-    - assets/images/formulaire2.png                                         
+    - assets/images/formulaire.png
+    - assets/images/formulaire2.png
     - assets/images/nom.png
-    - assets/images/lapin.jpg 
+    - assets/images/lapin.jpg
     - assets/videos/intro.mp4
     - assets/images/avatar1.png
     - assets/images/avatar2.png

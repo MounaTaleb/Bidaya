@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'math_jeu_page.dart';
 
 class MathNiveauPage extends StatefulWidget {
@@ -31,15 +32,110 @@ class _MathNiveauPageState extends State<MathNiveauPage>
     );
     _animationController.repeat(reverse: true);
 
-    for (int i = 2; i <= totalNiveaux; i++) {
-      niveauxDebloques[i] = false;
-    }
+    // Charger les données depuis le stockage local
+    _chargerDonnees();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Sauvegarder les données dans le stockage local
+  Future<void> _sauvegarderDonnees() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Sauvegarder les scores
+    final scoresJson = scoresParNiveau.entries.map((e) => '${e.key}:${e.value}').join(';');
+    await prefs.setString('math_scores', scoresJson);
+
+    // Sauvegarder les niveaux débloqués
+    final niveauxJson = niveauxDebloques.entries.where((e) => e.value).map((e) => e.key.toString()).join(';');
+    await prefs.setString('math_niveaux_debloques', niveauxJson);
+
+    // Sauvegarder le niveau actuel
+    await prefs.setInt('math_niveau_actuel', niveauActuel);
+  }
+
+  // Charger les données depuis le stockage local
+  Future<void> _chargerDonnees() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Charger les scores
+    final scoresJson = prefs.getString('math_scores') ?? '';
+    if (scoresJson.isNotEmpty) {
+      scoresParNiveau = {};
+      final scoresList = scoresJson.split(';');
+      for (final score in scoresList) {
+        final parts = score.split(':');
+        if (parts.length == 2) {
+          final niveau = int.tryParse(parts[0]);
+          final scoreValue = int.tryParse(parts[1]);
+          if (niveau != null && scoreValue != null) {
+            scoresParNiveau[niveau] = scoreValue;
+          }
+        }
+      }
+    }
+
+    // Charger les niveaux débloqués (par défaut seulement le niveau 1)
+    niveauxDebloques = {1: true};
+    final niveauxJson = prefs.getString('math_niveaux_debloques') ?? '1';
+    final niveauxList = niveauxJson.split(';');
+    for (final niveauStr in niveauxList) {
+      final niveau = int.tryParse(niveauStr);
+      if (niveau != null && niveau > 1) {
+        niveauxDebloques[niveau] = true;
+      }
+    }
+
+    // Charger le niveau actuel
+    niveauActuel = prefs.getInt('math_niveau_actuel') ?? 1;
+
+    // S'assurer que tous les niveaux jusqu'au niveau actuel sont débloqués
+    for (int i = 1; i <= niveauActuel; i++) {
+      niveauxDebloques[i] = true;
+    }
+
+    setState(() {});
+  }
+
+  // Réinitialiser toutes les données
+  Future<void> _reinitialiserProgression() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إعادة التعيين'),
+        content: const Text('هل أنت متأكد أنك تريد إعادة تعيين جميع المستويات؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('math_scores');
+              await prefs.remove('math_niveaux_debloques');
+              await prefs.remove('math_niveau_actuel');
+
+              setState(() {
+                scoresParNiveau.clear();
+                niveauxDebloques = {1: true};
+                niveauActuel = 1;
+                for (int i = 2; i <= totalNiveaux; i++) {
+                  niveauxDebloques[i] = false;
+                }
+              });
+
+              Navigator.pop(context);
+            },
+            child: const Text('نعم'),
+          ),
+        ],
+      ),
+    );
   }
 
   void demarrerNiveau(int niveau) {
@@ -58,7 +154,7 @@ class _MathNiveauPageState extends State<MathNiveauPage>
     }
   }
 
-  void _gererFinNiveau(int niveau, int score) {
+  void _gererFinNiveau(int niveau, int score) async {
     setState(() {
       scoresParNiveau[niveau] = score;
 
@@ -67,24 +163,25 @@ class _MathNiveauPageState extends State<MathNiveauPage>
         niveauActuel = niveau + 1;
       }
     });
+
+    // Sauvegarder après chaque niveau terminé
+    await _sauvegarderDonnees();
   }
 
   // Génère les positions en serpentant (gauche-droite-gauche)
   List<Offset> _genererPositionsPath(double screenWidth, double screenHeight) {
     List<Offset> positions = [];
-    double verticalSpacing = 70; // Espacement vertical entre les cercles
-    double startY = 80; // Position Y de départ
+    double verticalSpacing = 70;
+    double startY = 80;
 
     for (int i = 0; i < totalNiveaux; i++) {
       double y = startY + (i * verticalSpacing);
       double x;
 
-      // Créer un effet de serpent : gauche-centre-droite-centre
-      int pattern = (i ~/ 3) % 2; // Change de direction tous les 3 niveaux
+      int pattern = (i ~/ 3) % 2;
       int position = i % 3;
 
       if (pattern == 0) {
-        // Gauche -> Centre -> Droite
         if (position == 0) {
           x = screenWidth * 0.2;
         } else if (position == 1) {
@@ -93,7 +190,6 @@ class _MathNiveauPageState extends State<MathNiveauPage>
           x = screenWidth * 0.8;
         }
       } else {
-        // Droite -> Centre -> Gauche
         if (position == 0) {
           x = screenWidth * 0.8;
         } else if (position == 1) {
@@ -114,7 +210,6 @@ class _MathNiveauPageState extends State<MathNiveauPage>
     final bool estVerrouille = !(niveauxDebloques[niveau] ?? false);
     final bool estActif = !estVerrouille && !estComplete;
 
-    // Icônes variées selon le niveau
     IconData icone;
     Color couleurIcone = Colors.white;
 
@@ -123,12 +218,11 @@ class _MathNiveauPageState extends State<MathNiveauPage>
     } else if (estComplete) {
       icone = Icons.check_circle;
     } else if (niveau % 5 == 0) {
-      icone = Icons.emoji_events; // Trophée tous les 5 niveaux
+      icone = Icons.emoji_events;
     } else {
       icone = Icons.play_arrow;
     }
 
-    // Couleurs spéciales pour les niveaux multiples de 5
     Color couleurDebut;
     Color couleurFin;
 
@@ -136,7 +230,6 @@ class _MathNiveauPageState extends State<MathNiveauPage>
       couleurDebut = Colors.grey.shade400;
       couleurFin = Colors.grey.shade300;
     } else if (niveau % 5 == 0) {
-      // Niveaux spéciaux (5, 10, 15, 20, 25) en doré
       couleurDebut = const Color(0xFFFFD700);
       couleurFin = const Color(0xFFFFA000);
     } else if (estComplete) {
@@ -149,7 +242,7 @@ class _MathNiveauPageState extends State<MathNiveauPage>
 
     return Positioned(
       top: position.dy,
-      left: position.dx - 40, // Centre le cercle (80/2)
+      left: position.dx - 40,
       child: AnimatedBuilder(
         animation: _bounceAnimation,
         builder: (context, child) {
@@ -231,7 +324,7 @@ class _MathNiveauPageState extends State<MathNiveauPage>
       body: SafeArea(
         child: Column(
           children: [
-            // Header avec dégradé vert (adapté pour les mathématiques)
+            // Header avec dégradé vert
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 10),
@@ -274,7 +367,26 @@ class _MathNiveauPageState extends State<MathNiveauPage>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 40),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    onSelected: (value) {
+                      if (value == 'reset') {
+                        _reinitialiserProgression();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'reset',
+                        child: Row(
+                          children: [
+                            Icon(Icons.restart_alt, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('إعادة التعيين'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -291,12 +403,12 @@ class _MathNiveauPageState extends State<MathNiveauPage>
               ),
             ),
 
-            // Zone scrollable sans les lignes de chemin
+            // Zone scrollable
             Expanded(
               child: SingleChildScrollView(
                 child: Container(
                   width: double.infinity,
-                  height: totalNiveaux * 70 + 200, // Hauteur adaptée pour 25 niveaux
+                  height: totalNiveaux * 70 + 200,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [Color(0xFFF0F8FF), Color(0xFFE6F3FF)],
@@ -306,7 +418,6 @@ class _MathNiveauPageState extends State<MathNiveauPage>
                   ),
                   child: Stack(
                     children: [
-                      // Générer tous les cercles en serpentant (sans lignes)
                       ...List.generate(
                         totalNiveaux,
                             (index) => _buildCircleNiveau(index + 1, positions[index]),

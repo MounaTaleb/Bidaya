@@ -3,7 +3,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 class GeminiService {
   static final model = GenerativeModel(
     model: "gemini-2.0-flash",
-    apiKey: "AIzaSyCTPwfFQof8OKPOVyz2cpQFcbYIRkUzSu0",
+    apiKey: "AIzaSyDr3aEiVuDfTfRChrY3FIm_OFkVzgHyjXU",
     systemInstruction: Content.text(_systemPrompt),
   );
 
