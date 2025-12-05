@@ -78,7 +78,7 @@ GOOGLE_SERVICES_JSON=path/to/google-services.json
 1. Clone le repo :
 
 ```bash
-git clone https://github.com/<votre-utilisateur>/bidaya.git
+git clone https://github.com/MounaTaleb/bidaya.git
 cd bidaya
 ```
 
@@ -172,5 +172,6 @@ Abichou tasnim,abichoutasnim7@gmail.com,(http://github.com/tasnim-ab)
 * **Design** : maquettes sur Figma (https://www.figma.com/design/rxWWife4DoRlLoq1iJ706q/Bidya?node-id=0-1&t=hp2DKexejRK8GLKC-1).
 * **Charte graphique** : logo ![WhatsApp Image 2025-11-08 à 20 17 59_7992d092](https://github.com/user-attachments/assets/939dc246-35fc-47e1-b3b2-7edbb266bd18)
  palette couleurs <img width="679" height="482" alt="Capture d&#39;écran 2025-12-04 141217" src="https://github.com/user-attachments/assets/c82a8fe1-054b-476d-bd0d-9acc6135f3de" />
+
 
 
