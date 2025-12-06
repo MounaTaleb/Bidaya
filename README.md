@@ -2,7 +2,9 @@
 
 **Bidaya** est une application éducative pour les enfants de 6 à 12 ans, avec des quiz, mini-jeux et un chatbot interactif 📝🎮.  
 Notre mascotte **Arnob** le lapin 🐇 guide l’enfant dans son apprentissage de manière ludique et motivante.
+## 🎬 Demo
 
+![App Demo](./demo.mp4)
 ---
 
 ## 🎯 Objectifs
@@ -56,3 +58,4 @@ Nom facile à retenir et symbole de début d’apprentissage 🌟.
 
 Merci d’utiliser **Bidaya** 🐇💛  
 Apprendre en s’amusant 😄🎓
+
