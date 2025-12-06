@@ -4,7 +4,7 @@
 Notre mascotte **Arnob** le lapin 🐇 guide l’enfant dans son apprentissage de manière ludique et motivante.
 ## 🎬 Demo
 
-![App Demo](./demo.mp4)
+![App Demo](./demo.gif)
 ---
 
 ## 🎯 Objectifs
@@ -58,4 +58,5 @@ Nom facile à retenir et symbole de début d’apprentissage 🌟.
 
 Merci d’utiliser **Bidaya** 🐇💛  
 Apprendre en s’amusant 😄🎓
+
 
